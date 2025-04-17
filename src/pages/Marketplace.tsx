@@ -12,8 +12,6 @@ interface Diamond {
   clarity: string;
   cut: string;
   image_url: string | null;
-  type: 'individual' | 'bulk';
-  quantity: number | null;
 }
 
 export function Marketplace() {
@@ -24,7 +22,7 @@ export function Marketplace() {
     async function fetchDiamonds() {
       try {
         const { data, error } = await supabase
-          .from('diamonds')
+          .from('individual_diamonds')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -70,9 +68,7 @@ export function Marketplace() {
               <p className="text-gray-600 mb-2 line-clamp-2">{diamond.description}</p>
               <div className="flex justify-between items-center">
                 <span className="text-2xl font-bold text-blue-600">${diamond.price.toLocaleString()}</span>
-                <div className="text-sm text-gray-500">
-                  {diamond.type === 'bulk' ? `${diamond.quantity} available` : 'Individual piece'}
-                </div>
+                <div className="text-sm text-gray-500">Individual piece</div>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
                 <div>Carat: {diamond.carat}</div>

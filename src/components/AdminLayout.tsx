@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Gem, LayoutDashboard } from 'lucide-react';
+import { Users, Gem, LayoutDashboard, Package } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,9 +21,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       icon: Users,
     },
     {
-      name: 'Diamond Management',
-      path: '/admin/diamonds',
+      name: 'Individual Diamonds',
+      path: '/admin/individual-diamonds',
       icon: Gem,
+    },
+    {
+      name: 'Wholesale Diamonds',
+      path: '/admin/wholesale-diamonds',
+      icon: Package,
     },
   ];
 

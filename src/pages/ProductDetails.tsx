@@ -12,8 +12,6 @@ interface Diamond {
   clarity: string;
   cut: string;
   image_url: string;
-  type: 'individual' | 'bulk';
-  quantity?: number;
 }
 
 export function ProductDetails() {
@@ -25,7 +23,7 @@ export function ProductDetails() {
     async function fetchDiamond() {
       try {
         const { data, error } = await supabase
-          .from('diamonds')
+          .from('individual_diamonds')
           .select('*')
           .eq('id', id)
           .single();
@@ -102,12 +100,6 @@ export function ProductDetails() {
                 <h4 className="text-sm font-medium text-gray-900">Cut</h4>
                 <p className="mt-1 text-sm text-gray-500">{diamond.cut}</p>
               </div>
-              {diamond.type === 'bulk' && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900">Quantity</h4>
-                  <p className="mt-1 text-sm text-gray-500">{diamond.quantity}</p>
-                </div>
-              )}
             </div>
           </div>
 

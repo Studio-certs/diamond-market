@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import type { Diamond } from '../../types';
+import type { WholesaleDiamond } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircle, Edit, Trash2, Gem } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Package } from 'lucide-react';
 
-export function DiamondManagement() {
-  const [diamonds, setDiamonds] = useState<Diamond[]>([]);
+export function WholesaleDiamondManagement() {
+  const [diamonds, setDiamonds] = useState<WholesaleDiamond[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -19,35 +19,35 @@ export function DiamondManagement() {
     setError(null);
     try {
       const { data, error: dbError } = await supabase
-        .from('individual_diamonds')
+        .from('wholesale_diamonds')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (dbError) throw dbError;
       setDiamonds(data || []);
     } catch (err) {
-      setError(err instanceof Error ? `Failed to load diamonds: ${err.message}` : 'An unknown error occurred');
-      console.error("Error fetching diamonds:", err);
+      setError(err instanceof Error ? `Failed to load wholesale diamonds: ${err.message}` : 'An unknown error occurred');
+      console.error("Error fetching wholesale diamonds:", err);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleDeleteDiamond(id: string) {
-    if (!window.confirm('Are you sure you want to delete this diamond?')) {
+    if (!window.confirm('Are you sure you want to delete this wholesale listing?')) {
       return;
     }
     try {
       const { error: deleteError } = await supabase
-        .from('individual_diamonds')
+        .from('wholesale_diamonds')
         .delete()
         .eq('id', id);
 
       if (deleteError) throw deleteError;
       setDiamonds(diamonds.filter(diamond => diamond.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? `Failed to delete diamond: ${err.message}` : 'An unknown error occurred');
-      console.error("Error deleting diamond:", err);
+      setError(err instanceof Error ? `Failed to delete wholesale listing: ${err.message}` : 'An unknown error occurred');
+      console.error("Error deleting wholesale listing:", err);
     }
   }
 
@@ -55,15 +55,15 @@ export function DiamondManagement() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-          <Gem className="h-6 w-6 mr-2 text-blue-600" />
-          Diamond Management
+          <Package className="h-6 w-6 mr-2 text-blue-600" />
+          Wholesale Diamond Management
         </h1>
         <button
-          onClick={() => navigate('/admin/diamonds/add')}
+          onClick={() => navigate('/admin/wholesale-diamonds/add')}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
         >
           <PlusCircle size={18} />
-          Add New Diamond
+          Add New Wholesale Listing
         </button>
       </div>
 
@@ -85,8 +85,10 @@ export function DiamondManagement() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carat</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price/Carat</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carat Range</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available Qty</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -106,15 +108,21 @@ export function DiamondManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${diamond.price.toLocaleString()}
+                      ${diamond.base_price_per_carat.toLocaleString()}/ct
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {diamond.carat}ct
+                      {diamond.minimum_carat}ct - {diamond.maximum_carat}ct
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {diamond.available_quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {diamond.bulk_discount_percentage}%
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-3">
                         <button
-                          onClick={() => navigate(`/admin/diamonds/edit/${diamond.id}`)}
+                          onClick={() => navigate(`/admin/wholesale-diamonds/edit/${diamond.id}`)}
                           className="text-indigo-600 hover:text-indigo-900 transition-colors"
                           aria-label={`Edit ${diamond.name}`}
                         >
@@ -134,7 +142,7 @@ export function DiamondManagement() {
               </tbody>
             </table>
             {diamonds.length === 0 && (
-              <div className="text-center py-4 text-gray-500">No diamonds found.</div>
+              <div className="text-center py-4 text-gray-500">No wholesale listings found.</div>
             )}
           </div>
         </div>

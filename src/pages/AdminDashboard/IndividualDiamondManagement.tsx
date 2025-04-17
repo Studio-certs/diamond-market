@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import type { Diamond } from '../../types';
+import type { IndividualDiamond } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Edit, Trash2, Gem } from 'lucide-react';
 
-export function DiamondManagement() {
-  const [diamonds, setDiamonds] = useState<Diamond[]>([]);
+export function IndividualDiamondManagement() {
+  const [diamonds, setDiamonds] = useState<IndividualDiamond[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -56,10 +56,10 @@ export function DiamondManagement() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
           <Gem className="h-6 w-6 mr-2 text-blue-600" />
-          Diamond Management
+          Individual Diamond Management
         </h1>
         <button
-          onClick={() => navigate('/admin/diamonds/add')}
+          onClick={() => navigate('/admin/individual-diamonds/add')}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
         >
           <PlusCircle size={18} />
@@ -87,6 +87,7 @@ export function DiamondManagement() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carat</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -111,10 +112,13 @@ export function DiamondManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {diamond.carat}ct
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {diamond.color}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-3">
                         <button
-                          onClick={() => navigate(`/admin/diamonds/edit/${diamond.id}`)}
+                          onClick={() => navigate(`/admin/individual-diamonds/edit/${diamond.id}`)}
                           className="text-indigo-600 hover:text-indigo-900 transition-colors"
                           aria-label={`Edit ${diamond.name}`}
                         >
