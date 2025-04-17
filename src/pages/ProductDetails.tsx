@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Star, Shield, AlignCenterVertical as Certificate, Sparkles, ArrowLeft } from 'lucide-react';
+import { formatCurrency } from '../utils/currency';
 
 interface Diamond {
   id: string;
@@ -160,10 +161,13 @@ export function ProductDetails() {
                   </div>
 
                   <div className="mb-8">
-                    <p className="text-4xl font-bold text-gray-900 mb-2">
-                      ${diamond.price.toLocaleString()}
-                    </p>
-                    <p className="text-gray-500">{diamond.carat} carats</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-gray-900">
+                        {formatCurrency(diamond.price)}
+                      </span>
+                      <span className="text-lg text-gray-500">AUD</span>
+                    </div>
+                    <p className="text-gray-500 mt-1">{diamond.carat} carats</p>
                   </div>
 
                   <div className="prose prose-sm text-gray-500 mb-8">

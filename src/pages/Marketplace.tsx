@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Package, Gem, Star, Filter, Search } from 'lucide-react';
 import type { IndividualDiamond, WholesaleDiamond } from '../types';
+import { formatCurrency } from '../utils/currency';
 
 export function Marketplace() {
   const [view, setView] = useState<'individual' | 'wholesale'>('individual');
@@ -89,7 +90,6 @@ export function Marketplace() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section with View Switcher */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
@@ -98,7 +98,6 @@ export function Marketplace() {
               Discover our exceptional collection of certified diamonds, available for both individual purchase and wholesale orders.
             </p>
             
-            {/* New View Switcher */}
             <div className="inline-flex bg-white/10 backdrop-blur-sm rounded-xl p-1">
               <button
                 onClick={() => setView('individual')}
@@ -127,7 +126,6 @@ export function Marketplace() {
         </div>
       </div>
 
-      {/* Search Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-center">
           <div className="relative w-full max-w-xl">
@@ -143,7 +141,6 @@ export function Marketplace() {
         </div>
       </div>
 
-      {/* Diamond Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {view === 'individual' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -171,7 +168,10 @@ export function Marketplace() {
                   <p className="text-gray-600 mb-4 line-clamp-2">{diamond.description}</p>
                   <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">${diamond.price.toLocaleString()}</p>
+                      <div className="flex items-baseline">
+                        <span className="text-2xl font-bold text-blue-600">{formatCurrency(diamond.price)}</span>
+                        <span className="ml-1 text-sm text-gray-500">AUD</span>
+                      </div>
                       <p className="text-sm text-gray-500">{diamond.carat} carats</p>
                     </div>
                     <div className="flex flex-col items-end">
@@ -216,9 +216,10 @@ export function Marketplace() {
                   <p className="text-gray-600 mb-4 line-clamp-2">{diamond.description}</p>
                   <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">
-                        ${diamond.base_price_per_carat.toLocaleString()}/ct
-                      </p>
+                      <div className="flex items-baseline">
+                        <span className="text-2xl font-bold text-blue-600">{formatCurrency(diamond.base_price_per_carat)}</span>
+                        <span className="ml-1 text-sm text-gray-500">AUD/ct</span>
+                      </div>
                       <p className="text-sm text-gray-500">
                         {diamond.minimum_carat}-{diamond.maximum_carat} carats
                       </p>
