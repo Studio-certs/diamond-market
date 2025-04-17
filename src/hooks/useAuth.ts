@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { User } from '../types';
 
@@ -8,6 +8,10 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // List of public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/register', '/marketplace'];
 
   useEffect(() => {
     async function getProfile(userId: string) {
@@ -45,9 +49,20 @@ export function useAuth() {
             role: role,
             full_name: full_name
           });
+        } else {
+          setUser(null);
+          // Only redirect to login if we're not on a public route
+          if (!publicRoutes.includes(location.pathname)) {
+            navigate('/login');
+          }
         }
       } catch (error) {
         console.error('Error getting current user:', error);
+        setUser(null);
+        // Only redirect to login if we're not on a public route
+        if (!publicRoutes.includes(location.pathname)) {
+          navigate('/login');
+        }
       } finally {
         setIsLoading(false);
         setLoading(false);
@@ -69,13 +84,17 @@ export function useAuth() {
         });
       } else {
         setUser(null);
+        // Only redirect to login if we're not on a public route
+        if (!publicRoutes.includes(location.pathname)) {
+          navigate('/login');
+        }
       }
       setIsLoading(false);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
