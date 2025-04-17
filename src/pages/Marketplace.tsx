@@ -5,10 +5,18 @@ import { Package, Gem, Star, Filter, Search } from 'lucide-react';
 import type { IndividualDiamond, WholesaleDiamond } from '../types';
 import { formatCurrency } from '../utils/currency';
 
+interface DiamondWithImage extends IndividualDiamond {
+  primary_image?: string;
+}
+
+interface WholesaleDiamondWithImage extends WholesaleDiamond {
+  primary_image?: string;
+}
+
 export function Marketplace() {
   const [view, setView] = useState<'individual' | 'wholesale'>('individual');
-  const [individualDiamonds, setIndividualDiamonds] = useState<IndividualDiamond[]>([]);
-  const [wholesaleDiamonds, setWholesaleDiamonds] = useState<WholesaleDiamond[]>([]);
+  const [individualDiamonds, setIndividualDiamonds] = useState<DiamondWithImage[]>([]);
+  const [wholesaleDiamonds, setWholesaleDiamonds] = useState<WholesaleDiamondWithImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,23 +26,51 @@ export function Marketplace() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch individual diamonds
+        // Fetch individual diamonds with their primary images
         const { data: individualData, error: individualError } = await supabase
           .from('individual_diamonds')
-          .select('*')
+          .select(`
+            *,
+            diamond_images!inner (
+              image_url,
+              is_primary
+            )
+          `)
+          .eq('diamond_images.is_primary', true)
           .order('created_at', { ascending: false });
 
         if (individualError) throw individualError;
-        setIndividualDiamonds(individualData || []);
 
-        // Fetch wholesale diamonds
+        // Transform the data to include the primary image URL
+        const individualDiamondsWithImages = (individualData || []).map(diamond => ({
+          ...diamond,
+          primary_image: diamond.diamond_images?.[0]?.image_url
+        }));
+
+        setIndividualDiamonds(individualDiamondsWithImages);
+
+        // Fetch wholesale diamonds with their primary images
         const { data: wholesaleData, error: wholesaleError } = await supabase
           .from('wholesale_diamonds')
-          .select('*')
+          .select(`
+            *,
+            wholesale_diamond_images!inner (
+              image_url,
+              is_primary
+            )
+          `)
+          .eq('wholesale_diamond_images.is_primary', true)
           .order('created_at', { ascending: false });
 
         if (wholesaleError) throw wholesaleError;
-        setWholesaleDiamonds(wholesaleData || []);
+
+        // Transform the data to include the primary image URL
+        const wholesaleDiamondsWithImages = (wholesaleData || []).map(diamond => ({
+          ...diamond,
+          primary_image: diamond.wholesale_diamond_images?.[0]?.image_url
+        }));
+
+        setWholesaleDiamonds(wholesaleDiamondsWithImages);
       } catch (err) {
         console.error('Error fetching diamonds:', err);
         setError('Failed to load diamonds. Please try again later.');
@@ -55,6 +91,8 @@ export function Marketplace() {
     diamond.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     diamond.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const defaultDiamondImage = 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80';
 
   if (loading) {
     return (
@@ -143,7 +181,7 @@ export function Marketplace() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {view === 'individual' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIndividualDiamonds.map((diamond) => (
               <Link
                 key={diamond.id}
@@ -152,7 +190,7 @@ export function Marketplace() {
               >
                 <div className="relative">
                   <img
-                    src={diamond.image_url || 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80'}
+                    src={diamond.primary_image || defaultDiamondImage}
                     alt={diamond.name}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -191,7 +229,7 @@ export function Marketplace() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredWholesaleDiamonds.map((diamond) => (
               <Link
                 key={diamond.id}
@@ -200,7 +238,7 @@ export function Marketplace() {
               >
                 <div className="relative">
                   <img
-                    src={diamond.image_url || 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80'}
+                    src={diamond.primary_image || defaultDiamondImage}
                     alt={diamond.name}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                   />

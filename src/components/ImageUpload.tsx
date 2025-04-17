@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, X, Plus } from 'lucide-react';
+import { Upload, X, Plus, Star } from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
 
 interface ImageUploadProps {

@@ -5,12 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Edit, Trash2, Gem } from 'lucide-react';
 import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
 
+interface DiamondWithImage extends IndividualDiamond {
+  diamond_images?: {
+    image_url: string;
+    is_primary: boolean;
+  }[];
+}
+
 export function IndividualDiamondManagement() {
-  const [diamonds, setDiamonds] = useState<IndividualDiamond[]>([]);
+  const [diamonds, setDiamonds] = useState<DiamondWithImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [diamondToDelete, setDiamondToDelete] = useState<IndividualDiamond | null>(null);
+  const [diamondToDelete, setDiamondToDelete] = useState<DiamondWithImage | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +30,13 @@ export function IndividualDiamondManagement() {
     try {
       const { data, error: dbError } = await supabase
         .from('individual_diamonds')
-        .select('*')
+        .select(`
+          *,
+          diamond_images (
+            image_url,
+            is_primary
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (dbError) throw dbError;
@@ -36,7 +49,7 @@ export function IndividualDiamondManagement() {
     }
   }
 
-  const handleDeleteClick = (diamond: IndividualDiamond) => {
+  const handleDeleteClick = (diamond: DiamondWithImage) => {
     setDiamondToDelete(diamond);
     setDeleteModalOpen(true);
   };
@@ -59,6 +72,8 @@ export function IndividualDiamondManagement() {
       console.error("Error deleting diamond:", err);
     }
   };
+
+  const defaultImage = 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80';
 
   return (
     <div>
@@ -101,49 +116,50 @@ export function IndividualDiamondManagement() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {diamonds.map((diamond) => (
-                  <tr key={diamond.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {diamond.image_url && (
+                {diamonds.map((diamond) => {
+                  const primaryImage = diamond.diamond_images?.find(img => img.is_primary);
+                  return (
+                    <tr key={diamond.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
                           <img
                             className="h-10 w-10 rounded-full mr-3 object-cover"
-                            src={diamond.image_url}
+                            src={primaryImage?.image_url || defaultImage}
                             alt={diamond.name}
                           />
-                        )}
-                        <div className="text-sm font-medium text-gray-900">{diamond.name}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${diamond.price.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {diamond.carat}ct
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {diamond.color}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => navigate(`/admin/individual-diamonds/edit/${diamond.id}`)}
-                          className="text-indigo-600 hover:text-indigo-900 transition-colors"
-                          aria-label={`Edit ${diamond.name}`}
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(diamond)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          aria-label={`Delete ${diamond.name}`}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <div className="text-sm font-medium text-gray-900">{diamond.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${diamond.price.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {diamond.carat}ct
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {diamond.color}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => navigate(`/admin/individual-diamonds/edit/${diamond.id}`)}
+                            className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                            aria-label={`Edit ${diamond.name}`}
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(diamond)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                            aria-label={`Delete ${diamond.name}`}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {diamonds.length === 0 && (
