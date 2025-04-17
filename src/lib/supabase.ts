@@ -8,12 +8,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
+// Clear any existing auth data to prevent conflicts
+localStorage.removeItem('sb-' + new URL(supabaseUrl).hostname + '-auth-token');
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'diamond-marketplace-auth',
+    detectSessionInUrl: false,
+    storageKey: 'sb-' + new URL(supabaseUrl).hostname + '-auth-token',
     storage: window.localStorage
   },
   db: {
@@ -23,16 +26,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     headers: {
       'x-application-name': 'diamond-marketplace'
     }
-  }
-});
-
-// Add error logging
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT') {
-    console.log('User signed out');
-  } else if (event === 'SIGNED_IN') {
-    console.log('User signed in:', session?.user?.id);
-  } else if (event === 'TOKEN_REFRESHED') {
-    console.log('Token refreshed');
   }
 });

@@ -3,11 +3,14 @@ import { supabase } from '../../lib/supabase';
 import type { IndividualDiamond } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Edit, Trash2, Gem } from 'lucide-react';
+import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
 
 export function IndividualDiamondManagement() {
   const [diamonds, setDiamonds] = useState<IndividualDiamond[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [diamondToDelete, setDiamondToDelete] = useState<IndividualDiamond | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,23 +36,29 @@ export function IndividualDiamondManagement() {
     }
   }
 
-  async function handleDeleteDiamond(id: string) {
-    if (!window.confirm('Are you sure you want to delete this diamond?')) {
-      return;
-    }
+  const handleDeleteClick = (diamond: IndividualDiamond) => {
+    setDiamondToDelete(diamond);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!diamondToDelete) return;
+
     try {
       const { error: deleteError } = await supabase
         .from('individual_diamonds')
         .delete()
-        .eq('id', id);
+        .eq('id', diamondToDelete.id);
 
       if (deleteError) throw deleteError;
-      setDiamonds(diamonds.filter(diamond => diamond.id !== id));
+      setDiamonds(diamonds.filter(diamond => diamond.id !== diamondToDelete.id));
+      setDeleteModalOpen(false);
+      setDiamondToDelete(null);
     } catch (err) {
       setError(err instanceof Error ? `Failed to delete diamond: ${err.message}` : 'An unknown error occurred');
       console.error("Error deleting diamond:", err);
     }
-  }
+  };
 
   return (
     <div>
@@ -125,7 +134,7 @@ export function IndividualDiamondManagement() {
                           <Edit size={18} />
                         </button>
                         <button
-                          onClick={() => handleDeleteDiamond(diamond.id)}
+                          onClick={() => handleDeleteClick(diamond)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                           aria-label={`Delete ${diamond.name}`}
                         >
@@ -143,6 +152,16 @@ export function IndividualDiamondManagement() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDiamondToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        itemName={diamondToDelete?.name || ''}
+      />
     </div>
   );
 }

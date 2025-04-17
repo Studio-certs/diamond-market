@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Package } from 'lucide-react';
+import { ImageUpload } from '../../../components/ImageUpload';
 
 export function AddWholesaleDiamond() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ export function AddWholesaleDiamond() {
       available_quantity: parseInt(formData.get('available_quantity') as string),
       minimum_order_quantity: parseInt(formData.get('minimum_order_quantity') as string),
       bulk_discount_percentage: parseFloat(formData.get('bulk_discount_percentage') as string),
-      image_url: formData.get('image_url') as string,
+      image_url: imageUrl,
     };
 
     try {
@@ -59,6 +61,8 @@ export function AddWholesaleDiamond() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+        <ImageUpload onImageUrl={setImageUrl} />
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">Listing Name</label>
           <input
@@ -208,16 +212,6 @@ export function AddWholesaleDiamond() {
               ))}
             </select>
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="image_url" className="block text-sm font-medium text-gray-700">Image URL</label>
-          <input
-            type="url"
-            name="image_url"
-            id="image_url"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
         </div>
 
         <div className="flex justify-end space-x-3">

@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Gem } from 'lucide-react';
+import { ImageUpload } from '../../../components/ImageUpload';
 
 export function AddIndividualDiamond() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,7 +24,7 @@ export function AddIndividualDiamond() {
       color: formData.get('color') as string,
       clarity: formData.get('clarity') as string,
       cut: formData.get('cut') as string,
-      image_url: formData.get('image_url') as string,
+      image_url: imageUrl,
     };
 
     try {
@@ -55,6 +57,8 @@ export function AddIndividualDiamond() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+        <ImageUpload onImageUrl={setImageUrl} />
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
           <input
@@ -149,16 +153,6 @@ export function AddIndividualDiamond() {
               ))}
             </select>
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="image_url" className="block text-sm font-medium text-gray-700">Image URL</label>
-          <input
-            type="url"
-            name="image_url"
-            id="image_url"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
         </div>
 
         <div className="flex justify-end space-x-3">
