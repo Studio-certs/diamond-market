@@ -8,7 +8,7 @@ export function AddIndividualDiamond() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,15 +24,34 @@ export function AddIndividualDiamond() {
       color: formData.get('color') as string,
       clarity: formData.get('clarity') as string,
       cut: formData.get('cut') as string,
-      image_url: imageUrl,
+      image_url: images.find(img => img.isPrimary)?.url || images[0]?.url || null,
     };
 
     try {
-      const { error: insertError } = await supabase
+      // Insert the diamond
+      const { data: diamond, error: insertError } = await supabase
         .from('individual_diamonds')
-        .insert([diamondData]);
+        .insert([diamondData])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // Insert the images
+      if (images.length > 0) {
+        const { error: imagesError } = await supabase
+          .from('diamond_images')
+          .insert(
+            images.map(img => ({
+              diamond_id: diamond.id,
+              image_url: img.url,
+              is_primary: img.isPrimary
+            }))
+          );
+
+        if (imagesError) throw imagesError;
+      }
+
       navigate('/admin/individual-diamonds');
     } catch (err) {
       console.error('Error adding diamond:', err);
@@ -57,7 +76,7 @@ export function AddIndividualDiamond() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
-        <ImageUpload onImageUrl={setImageUrl} />
+        <ImageUpload onImagesChange={setImages} />
 
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>

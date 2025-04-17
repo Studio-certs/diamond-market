@@ -62,6 +62,29 @@ export interface Database {
           created_at?: string;
         };
       };
+      diamond_images: {
+        Row: {
+          id: string;
+          diamond_id: string;
+          image_url: string;
+          is_primary: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          diamond_id: string;
+          image_url: string;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          diamond_id?: string;
+          image_url?: string;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+      };
       wholesale_diamonds: {
         Row: {
           id: string;
