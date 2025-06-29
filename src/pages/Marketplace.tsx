@@ -2,21 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Package, Gem, Star, Filter, Search } from 'lucide-react';
-import type { IndividualDiamond, WholesaleDiamond } from '../types';
+import type { IndividualDiamond, WholesaleDiamond, DiamondImage } from '../types';
 import { formatCurrency } from '../utils/currency';
 
-interface DiamondWithImage extends IndividualDiamond {
+interface DiamondWithImages extends IndividualDiamond {
+  diamond_images: DiamondImage[];
   primary_image?: string;
 }
 
-interface WholesaleDiamondWithImage extends WholesaleDiamond {
+interface WholesaleDiamondWithImages extends WholesaleDiamond {
+  diamond_images: DiamondImage[];
   primary_image?: string;
 }
 
 export function Marketplace() {
   const [view, setView] = useState<'individual' | 'wholesale'>('individual');
-  const [individualDiamonds, setIndividualDiamonds] = useState<DiamondWithImage[]>([]);
-  const [wholesaleDiamonds, setWholesaleDiamonds] = useState<WholesaleDiamondWithImage[]>([]);
+  const [individualDiamonds, setIndividualDiamonds] = useState<DiamondWithImages[]>([]);
+  const [wholesaleDiamonds, setWholesaleDiamonds] = useState<WholesaleDiamondWithImages[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,51 +28,26 @@ export function Marketplace() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch individual diamonds with their primary images
-        const { data: individualData, error: individualError } = await supabase
-          .from('individual_diamonds')
-          .select(`
-            *,
-            diamond_images!inner (
-              image_url,
-              is_primary
-            )
-          `)
-          .eq('diamond_images.is_primary', true)
-          .order('created_at', { ascending: false });
-
+        // Fetch individual diamonds with their images via RPC
+        const { data: individualData, error: individualError } = await supabase.rpc('get_all_individual_diamonds');
         if (individualError) throw individualError;
 
-        // Transform the data to include the primary image URL
         const individualDiamondsWithImages = (individualData || []).map(diamond => ({
           ...diamond,
-          primary_image: diamond.diamond_images?.[0]?.image_url
+          primary_image: diamond.diamond_images?.find(img => img.is_primary)?.image_url
         }));
-
         setIndividualDiamonds(individualDiamondsWithImages);
 
-        // Fetch wholesale diamonds with their primary images
-        const { data: wholesaleData, error: wholesaleError } = await supabase
-          .from('wholesale_diamonds')
-          .select(`
-            *,
-            wholesale_diamond_images!inner (
-              image_url,
-              is_primary
-            )
-          `)
-          .eq('wholesale_diamond_images.is_primary', true)
-          .order('created_at', { ascending: false });
-
+        // Fetch wholesale diamonds with their images via RPC
+        const { data: wholesaleData, error: wholesaleError } = await supabase.rpc('get_all_wholesale_diamonds');
         if (wholesaleError) throw wholesaleError;
 
-        // Transform the data to include the primary image URL
         const wholesaleDiamondsWithImages = (wholesaleData || []).map(diamond => ({
           ...diamond,
-          primary_image: diamond.wholesale_diamond_images?.[0]?.image_url
+          primary_image: diamond.diamond_images?.find(img => img.is_primary)?.image_url
         }));
-
         setWholesaleDiamonds(wholesaleDiamondsWithImages);
+
       } catch (err) {
         console.error('Error fetching diamonds:', err);
         setError('Failed to load diamonds. Please try again later.');
@@ -92,7 +69,7 @@ export function Marketplace() {
     diamond.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const defaultDiamondImage = 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80';
+  const defaultDiamondImage = 'https://images.pexels.com/photos/1395306/pexels-photo-1395306.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
 
   if (loading) {
     return (

@@ -65,7 +65,7 @@ export function IndividualDiamondManagement() {
     }
   };
 
-  const defaultImage = 'https://images.pexels.com/photos/265906/pexels-photo-265906.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
+  const defaultImage = 'https://images.pexels.com/photos/265906/pexels-photo-265906.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1260&amp;h=750&amp;dpr=2';
 
   return (
     <div>

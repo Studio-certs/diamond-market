@@ -7,7 +7,6 @@ export interface IndividualDiamond {
   color: string;
   clarity: string;
   cut: string;
-  image_url: string;
   created_at: string;
 }
 
@@ -24,7 +23,6 @@ export interface WholesaleDiamond {
   available_quantity: number;
   minimum_order_quantity: number;
   bulk_discount_percentage: number;
-  image_url: string;
   created_at: string;
 }
 
@@ -33,4 +31,9 @@ export interface User {
   email: string;
   role: 'admin' | 'user';
   full_name: string;
+}
+
+export interface DiamondImage {
+  image_url: string;
+  is_primary: boolean;
 }

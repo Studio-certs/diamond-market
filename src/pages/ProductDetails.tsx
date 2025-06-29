@@ -1,63 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Star, Shield, AlignCenterVertical as Certificate, Sparkles, ArrowLeft } from 'lucide-react';
+import { Star, Shield, Gem as Certificate, Sparkles, ArrowLeft } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
+import type { IndividualDiamond, DiamondImage } from '../types';
 
-interface Diamond {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  carat: number;
-  color: string;
-  clarity: string;
-  cut: string;
-  image_url: string;
-}
-
-interface DiamondImage {
-  id: string;
-  diamond_id: string;
-  image_url: string;
-  is_primary: boolean;
+interface DiamondDetails extends IndividualDiamond {
+  diamond_images: DiamondImage[];
 }
 
 export function ProductDetails() {
-  const { id } = useParams();
-  const [diamond, setDiamond] = useState<Diamond | null>(null);
-  const [images, setImages] = useState<DiamondImage[]>([]);
+  const { id } = useParams<{ id: string }>();
+  const [diamond, setDiamond] = useState<DiamondDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
+      if (!id) {
+        setError("No product ID provided.");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
       try {
-        // Fetch diamond details
-        const { data: diamondData, error: diamondError } = await supabase
-          .from('individual_diamonds')
-          .select('*')
-          .eq('id', id)
+        const { data, error: rpcError } = await supabase
+          .rpc('get_individual_diamond_by_id', { p_id: id })
           .single();
 
-        if (diamondError) throw diamondError;
-        setDiamond(diamondData);
+        if (rpcError) throw rpcError;
+        if (!data) throw new Error("Product not found.");
 
-        // Fetch diamond images
-        const { data: imageData, error: imageError } = await supabase
-          .from('diamond_images')
-          .select('*')
-          .eq('diamond_id', id)
-          .order('is_primary', { ascending: false });
-
-        if (imageError) throw imageError;
-        setImages(imageData || []);
-
+        setDiamond(data);
         // Set initial selected image (primary image or first available)
-        const primaryImage = imageData?.find(img => img.is_primary);
-        setSelectedImage(primaryImage?.image_url || diamondData?.image_url || null);
-      } catch (error) {
-        console.error('Error fetching diamond:', error);
+        const primaryImage = data.diamond_images?.find(img => img.is_primary);
+        setSelectedImage(primaryImage?.image_url || data.diamond_images?.[0]?.image_url || null);
+
+      } catch (err) {
+        console.error('Error fetching diamond:', err);
+        setError(err instanceof Error ? err.message : "An unknown error occurred.");
       } finally {
         setLoading(false);
       }
@@ -77,42 +61,36 @@ export function ProductDetails() {
     );
   }
 
-  if (!diamond) {
+  if (error || !diamond) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-xl text-gray-600 mb-4">Product not found</p>
-          <button
-            onClick={() => window.history.back()}
+          <p className="text-xl text-gray-600 mb-4">{error || "Product not found"}</p>
+          <Link
+            to="/marketplace"
             className="inline-flex items-center text-blue-600 hover:text-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Go back
-          </button>
+            Back to Marketplace
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Combine all available images, with the main image_url if not in diamond_images
-  const allImages = [
-    ...images.map(img => img.image_url),
-    ...(diamond.image_url && !images.some(img => img.image_url === diamond.image_url) 
-      ? [diamond.image_url] 
-      : []
-    )
-  ];
+  const allImages = diamond.diamond_images.map(img => img.image_url);
+  const defaultImage = 'https://images.pexels.com/photos/1395306/pexels-photo-1395306.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <button
-          onClick={() => window.history.back()}
+        <Link
+          to="/marketplace"
           className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-8"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Marketplace
-        </button>
+        </Link>
 
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
@@ -120,7 +98,7 @@ export function ProductDetails() {
             <div className="p-6 lg:p-8">
               <div className="aspect-w-1 aspect-h-1 rounded-lg overflow-hidden bg-gray-100">
                 <img
-                  src={selectedImage || diamond.image_url}
+                  src={selectedImage || defaultImage}
                   alt={diamond.name}
                   className="w-full h-full object-center object-cover"
                 />
@@ -131,8 +109,8 @@ export function ProductDetails() {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(img)}
-                      className={`aspect-w-1 aspect-h-1 rounded-lg overflow-hidden bg-gray-100 ${
-                        selectedImage === img ? 'ring-2 ring-blue-500' : ''
+                      className={`aspect-w-1 aspect-h-1 rounded-lg overflow-hidden bg-gray-100 transition-all ${
+                        selectedImage === img ? 'ring-2 ring-blue-500' : 'hover:opacity-80'
                       }`}
                     >
                       <img
@@ -207,25 +185,6 @@ export function ProductDetails() {
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="border-t border-gray-200 pt-8">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Features</h3>
-                    <ul className="space-y-3">
-                      <li className="flex items-center gap-2 text-sm text-gray-500">
-                        <Shield className="w-5 h-5 text-green-500" />
-                        Certified authentic with documentation
-                      </li>
-                      <li className="flex items-center gap-2 text-sm text-gray-500">
-                        <Star className="w-5 h-5 text-yellow-500" />
-                        Exceptional brilliance and fire
-                      </li>
-                      <li className="flex items-center gap-2 text-sm text-gray-500">
-                        <Certificate className="w-5 h-5 text-blue-500" />
-                        Includes detailed certification report
-                      </li>
-                    </ul>
                   </div>
                 </div>
 
