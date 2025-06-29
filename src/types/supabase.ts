@@ -34,7 +34,6 @@ export interface Database {
           color: string;
           clarity: string;
           cut: string;
-          image_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -46,7 +45,6 @@ export interface Database {
           color: string;
           clarity: string;
           cut: string;
-          image_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -58,28 +56,30 @@ export interface Database {
           color?: string;
           clarity?: string;
           cut?: string;
-          image_url?: string | null;
           created_at?: string;
         };
       };
       diamond_images: {
         Row: {
           id: string;
-          diamond_id: string;
+          individual_diamond_id: string | null;
+          wholesale_diamond_id: string | null;
           image_url: string;
           is_primary: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
-          diamond_id: string;
+          individual_diamond_id?: string | null;
+          wholesale_diamond_id?: string | null;
           image_url: string;
           is_primary?: boolean;
           created_at?: string;
         };
         Update: {
           id?: string;
-          diamond_id?: string;
+          individual_diamond_id?: string | null;
+          wholesale_diamond_id?: string | null;
           image_url?: string;
           is_primary?: boolean;
           created_at?: string;
@@ -99,7 +99,6 @@ export interface Database {
           available_quantity: number;
           minimum_order_quantity: number;
           bulk_discount_percentage: number;
-          image_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -115,7 +114,6 @@ export interface Database {
           available_quantity: number;
           minimum_order_quantity: number;
           bulk_discount_percentage: number;
-          image_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -131,7 +129,6 @@ export interface Database {
           available_quantity?: number;
           minimum_order_quantity?: number;
           bulk_discount_percentage?: number;
-          image_url?: string | null;
           created_at?: string;
         };
       };

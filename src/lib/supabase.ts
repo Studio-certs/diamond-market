@@ -8,23 +8,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-// Clear any existing auth data to prevent conflicts
-localStorage.removeItem('sb-' + new URL(supabaseUrl).hostname + '-auth-token');
-
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    storageKey: 'sb-' + new URL(supabaseUrl).hostname + '-auth-token',
-    storage: window.localStorage
+    // The storageKey is managed by the client library, no need to manually set it
+    // unless you have a specific reason to override the default.
   },
-  db: {
-    schema: 'public'
-  },
-  global: {
-    headers: {
-      'x-application-name': 'diamond-marketplace'
-    }
-  }
 });

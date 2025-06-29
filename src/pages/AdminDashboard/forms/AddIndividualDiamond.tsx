@@ -24,7 +24,6 @@ export function AddIndividualDiamond() {
       color: formData.get('color') as string,
       clarity: formData.get('clarity') as string,
       cut: formData.get('cut') as string,
-      image_url: images.find(img => img.isPrimary)?.url || images[0]?.url || null,
     };
 
     try {
@@ -43,7 +42,7 @@ export function AddIndividualDiamond() {
           .from('diamond_images')
           .insert(
             images.map(img => ({
-              diamond_id: diamond.id,
+              individual_diamond_id: diamond.id,
               image_url: img.url,
               is_primary: img.isPrimary
             }))

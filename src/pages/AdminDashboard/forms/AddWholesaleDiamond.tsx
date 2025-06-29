@@ -8,7 +8,7 @@ export function AddWholesaleDiamond() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,15 +28,31 @@ export function AddWholesaleDiamond() {
       available_quantity: parseInt(formData.get('available_quantity') as string),
       minimum_order_quantity: parseInt(formData.get('minimum_order_quantity') as string),
       bulk_discount_percentage: parseFloat(formData.get('bulk_discount_percentage') as string),
-      image_url: imageUrl,
     };
 
     try {
-      const { error: insertError } = await supabase
+      const { data: diamond, error: insertError } = await supabase
         .from('wholesale_diamonds')
-        .insert([wholesaleData]);
+        .insert([wholesaleData])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      if (images.length > 0) {
+        const { error: imagesError } = await supabase
+          .from('diamond_images')
+          .insert(
+            images.map(img => ({
+              wholesale_diamond_id: diamond.id,
+              image_url: img.url,
+              is_primary: img.isPrimary
+            }))
+          );
+        
+        if (imagesError) throw imagesError;
+      }
+
       navigate('/admin/wholesale-diamonds');
     } catch (err) {
       console.error('Error adding wholesale listing:', err);
@@ -61,7 +77,7 @@ export function AddWholesaleDiamond() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
-        <ImageUpload onImageUrl={setImageUrl} />
+        <ImageUpload onImagesChange={setImages} />
 
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">Listing Name</label>

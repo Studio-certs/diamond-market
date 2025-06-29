@@ -28,18 +28,10 @@ export function IndividualDiamondManagement() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: dbError } = await supabase
-        .from('individual_diamonds')
-        .select(`
-          *,
-          diamond_images (
-            image_url,
-            is_primary
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Use the new RPC function to fetch diamonds with their images
+      const { data, error: rpcError } = await supabase.rpc('get_all_individual_diamonds');
 
-      if (dbError) throw dbError;
+      if (rpcError) throw rpcError;
       setDiamonds(data || []);
     } catch (err) {
       setError(err instanceof Error ? `Failed to load diamonds: ${err.message}` : 'An unknown error occurred');
@@ -73,7 +65,7 @@ export function IndividualDiamondManagement() {
     }
   };
 
-  const defaultImage = 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80';
+  const defaultImage = 'https://images.pexels.com/photos/265906/pexels-photo-265906.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
 
   return (
     <div>

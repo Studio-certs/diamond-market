@@ -22,26 +22,19 @@ export function EditIndividualDiamond() {
 
   useEffect(() => {
     async function fetchDiamond() {
+      if (!id) return;
       try {
-        // Fetch diamond details with images
-        const { data: diamondData, error: diamondError } = await supabase
-          .from('individual_diamonds')
-          .select(`
-            *,
-            diamond_images (
-              image_url,
-              is_primary
-            )
-          `)
-          .eq('id', id)
+        // Use the new RPC function to fetch a single diamond with its images
+        const { data: diamondData, error: rpcError } = await supabase
+          .rpc('get_individual_diamond_by_id', { p_id: id })
           .single();
 
-        if (diamondError) throw diamondError;
+        if (rpcError) throw rpcError;
         setDiamond(diamondData);
 
         // Transform image data to the format expected by ImageUpload component
         if (diamondData?.diamond_images) {
-          const transformedImages = diamondData.diamond_images.map(img => ({
+          const transformedImages = (diamondData.diamond_images as any[]).map(img => ({
             url: img.image_url,
             isPrimary: img.is_primary
           }));
@@ -53,13 +46,12 @@ export function EditIndividualDiamond() {
       }
     }
 
-    if (id) {
-      fetchDiamond();
-    }
+    fetchDiamond();
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!id) return;
     setLoading(true);
     setError(null);
 
@@ -83,21 +75,21 @@ export function EditIndividualDiamond() {
 
       if (updateError) throw updateError;
 
-      // Delete existing images
+      // Delete existing images using the correct foreign key column
       const { error: deleteError } = await supabase
         .from('diamond_images')
         .delete()
-        .eq('diamond_id', id);
+        .eq('individual_diamond_id', id);
 
       if (deleteError) throw deleteError;
 
-      // Insert new images
+      // Insert new images using the correct foreign key column
       if (images.length > 0) {
         const { error: imagesError } = await supabase
           .from('diamond_images')
           .insert(
             images.map(img => ({
-              diamond_id: id,
+              individual_diamond_id: id,
               image_url: img.url,
               is_primary: img.isPrimary
             }))
