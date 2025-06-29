@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { User } from '../types';
 
@@ -7,99 +7,44 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // List of public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/register', '/marketplace'];
 
   useEffect(() => {
     let mounted = true;
 
-    async function getUser() {
-      try {
-        // Clear any stale session data
-        const currentSession = await supabase.auth.getSession();
-        if (!currentSession.data.session) {
-          localStorage.removeItem(supabase.auth.storageKey);
-          if (mounted) {
-            setUser(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        if (!mounted) return;
-
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', currentSession.data.session.user.id)
-          .single();
-
-        if (!mounted) return;
-
-        if (error) {
-          console.error('Error fetching profile:', error);
-          setUser(null);
-        } else {
-          setUser({
-            id: currentSession.data.session.user.id,
-            email: currentSession.data.session.user.email!,
-            role: data?.role || 'user',
-            full_name: data?.full_name || ''
-          });
-        }
-      } catch (error) {
-        console.error('Error in getUser:', error);
-        if (mounted) setUser(null);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    }
-
-    getUser();
-
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
 
-      setIsLoading(true);
-
-      if (event === 'SIGNED_OUT') {
-        localStorage.removeItem(supabase.auth.storageKey);
-        setUser(null);
-        setIsLoading(false);
-        if (!publicRoutes.includes(location.pathname)) {
-          navigate('/login');
-        }
-        return;
-      }
-
       if (session?.user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', session.user.id)
-          .single();
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role, full_name')
+            .eq('id', session.user.id)
+            .single();
 
-        if (!mounted) return;
-
-        if (error) {
-          console.error('Error fetching profile:', error);
+          if (error) {
+            console.error('Error fetching profile:', error);
+            setUser(null);
+          } else if (data) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email!,
+              role: data.role || 'user',
+              full_name: data.full_name || '',
+            });
+          }
+        } catch (error) {
+          console.error('Error in onAuthStateChange profile fetch:', error);
           setUser(null);
-        } else {
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            role: data?.role || 'user',
-            full_name: data?.full_name || ''
-          });
         }
       } else {
         setUser(null);
       }
       
+      // Set loading to false only after the first auth event is handled.
+      // This prevents the loading screen from reappearing on session refreshes.
       setIsLoading(false);
     });
 
@@ -107,7 +52,7 @@ export function useAuth() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, []); // An empty dependency array ensures this effect runs only once.
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -115,8 +60,8 @@ export function useAuth() {
         email,
         password,
       });
-      
       if (error) throw error;
+      // onAuthStateChange will handle the user state update.
       return { data, error: null };
     } catch (error) {
       console.error('Error in signIn:', error);
@@ -130,8 +75,8 @@ export function useAuth() {
         email,
         password,
       });
-      
       if (error) throw error;
+      // onAuthStateChange will handle the user state update.
       return { data, error: null };
     } catch (error) {
       console.error('Error in signUp:', error);
@@ -142,8 +87,8 @@ export function useAuth() {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      localStorage.removeItem(supabase.auth.storageKey);
-      setUser(null);
+      // The onAuthStateChange listener will set the user to null.
+      // Navigate to a safe page after sign-out.
       navigate('/');
     } catch (error) {
       console.error('Error in signOut:', error);
