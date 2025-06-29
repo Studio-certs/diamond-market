@@ -1,23 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import type { WholesaleDiamond } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Edit, Trash2, Package } from 'lucide-react';
 import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
 
-interface WholesaleDiamondWithImage extends WholesaleDiamond {
-  wholesale_diamond_images?: {
-    image_url: string;
-    is_primary: boolean;
-  }[];
+// This interface now matches the structure returned by the RPC function
+interface WholesaleDiamondWithImages {
+  id: string;
+  name: string;
+  description: string;
+  base_price_per_carat: number;
+  minimum_carat: number;
+  maximum_carat: number;
+  color: string;
+  clarity: string;
+  cut: string;
+  available_quantity: number;
+  minimum_order_quantity: number;
+  bulk_discount_percentage: number;
+  created_at: string;
+  diamond_images: { image_url: string; is_primary: boolean }[];
 }
 
 export function WholesaleDiamondManagement() {
-  const [diamonds, setDiamonds] = useState<WholesaleDiamondWithImage[]>([]);
+  const [diamonds, setDiamonds] = useState<WholesaleDiamondWithImages[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [diamondToDelete, setDiamondToDelete] = useState<WholesaleDiamondWithImage | null>(null);
+  const [diamondToDelete, setDiamondToDelete] = useState<WholesaleDiamondWithImages | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,18 +38,10 @@ export function WholesaleDiamondManagement() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: dbError } = await supabase
-        .from('wholesale_diamonds')
-        .select(`
-          *,
-          wholesale_diamond_images (
-            image_url,
-            is_primary
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Refactored to use the corrected RPC function for consistency
+      const { data, error: rpcError } = await supabase.rpc('get_all_wholesale_diamonds');
 
-      if (dbError) throw dbError;
+      if (rpcError) throw rpcError;
       setDiamonds(data || []);
     } catch (err) {
       setError(err instanceof Error ? `Failed to load wholesale diamonds: ${err.message}` : 'An unknown error occurred');
@@ -49,7 +51,7 @@ export function WholesaleDiamondManagement() {
     }
   }
 
-  const handleDeleteClick = (diamond: WholesaleDiamondWithImage) => {
+  const handleDeleteClick = (diamond: WholesaleDiamondWithImages) => {
     setDiamondToDelete(diamond);
     setDeleteModalOpen(true);
   };
@@ -58,6 +60,7 @@ export function WholesaleDiamondManagement() {
     if (!diamondToDelete) return;
 
     try {
+      // Deleting the diamond will also delete its images due to CASCADE DELETE on the foreign key
       const { error: deleteError } = await supabase
         .from('wholesale_diamonds')
         .delete()
@@ -73,7 +76,7 @@ export function WholesaleDiamondManagement() {
     }
   };
 
-  const defaultImage = 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80';
+  const defaultImage = 'https://images.pexels.com/photos/1395306/pexels-photo-1395306.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
 
   return (
     <div>
@@ -118,7 +121,7 @@ export function WholesaleDiamondManagement() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {diamonds.map((diamond) => {
-                  const primaryImage = diamond.wholesale_diamond_images?.find(img => img.is_primary);
+                  const primaryImage = diamond.diamond_images?.find(img => img.is_primary);
                   return (
                     <tr key={diamond.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -166,7 +169,7 @@ export function WholesaleDiamondManagement() {
                 })}
               </tbody>
             </table>
-            {diamonds.length === 0 && (
+            {diamonds.length === 0 && !loading && (
               <div className="text-center py-4 text-gray-500">No wholesale listings found.</div>
             )}
           </div>

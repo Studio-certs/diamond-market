@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Package, Shield, AlignCenterVertical as Certificate, Sparkles, ArrowLeft, Users, Percent, Scale, Star } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 
-interface WholesaleDiamond {
+interface WholesaleDiamondWithImages {
   id: string;
   name: string;
   description: string;
@@ -17,48 +17,35 @@ interface WholesaleDiamond {
   available_quantity: number;
   minimum_order_quantity: number;
   bulk_discount_percentage: number;
-}
-
-interface DiamondImage {
-  id: string;
-  diamond_id: string;
-  image_url: string;
-  is_primary: boolean;
+  diamond_images: { image_url: string; is_primary: boolean }[];
 }
 
 export function WholesaleDetails() {
-  const { id } = useParams();
-  const [diamond, setDiamond] = useState<WholesaleDiamond | null>(null);
-  const [images, setImages] = useState<DiamondImage[]>([]);
+  const { id } = useParams<{ id: string }>();
+  const [diamond, setDiamond] = useState<WholesaleDiamondWithImages | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
       try {
-        // Fetch diamond details
-        const { data: diamondData, error: diamondError } = await supabase
-          .from('wholesale_diamonds')
-          .select('*')
-          .eq('id', id)
+        setLoading(true);
+        const { data, error } = await supabase
+          .rpc('get_wholesale_diamond_by_id', { p_id: id })
           .single();
 
-        if (diamondError) throw diamondError;
-        setDiamond(diamondData);
+        if (error) throw error;
 
-        // Fetch diamond images
-        const { data: imageData, error: imageError } = await supabase
-          .from('wholesale_diamond_images')
-          .select('*')
-          .eq('diamond_id', id)
-          .order('is_primary', { ascending: false });
-
-        if (imageError) throw imageError;
-        setImages(imageData || []);
-
-        // Set initial selected image (primary image or first available)
-        const primaryImage = imageData?.find(img => img.is_primary);
-        setSelectedImage(primaryImage?.image_url || null);
+        if (data) {
+          setDiamond(data);
+          const primaryImage = data.diamond_images?.find((img: any) => img.is_primary);
+          const firstImage = data.diamond_images?.[0];
+          setSelectedImage(primaryImage?.image_url || firstImage?.image_url || null);
+        }
       } catch (error) {
         console.error('Error fetching wholesale diamond:', error);
       } finally {
@@ -97,8 +84,9 @@ export function WholesaleDetails() {
     );
   }
 
-  const defaultImage = 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80';
-  const allImages = images.map(img => img.image_url);
+  const defaultImage = 'https://images.pexels.com/photos/1395306/pexels-photo-1395306.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
+  const allImages = diamond.diamond_images?.map(img => img.image_url) || [];
+  const displayImage = selectedImage || allImages[0] || defaultImage;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -117,7 +105,7 @@ export function WholesaleDetails() {
             <div className="p-6 lg:p-8">
               <div className="aspect-w-1 aspect-h-1 rounded-lg overflow-hidden bg-gray-100">
                 <img
-                  src={selectedImage || defaultImage}
+                  src={displayImage}
                   alt={diamond.name}
                   className="w-full h-full object-center object-cover"
                 />

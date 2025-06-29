@@ -31,6 +31,7 @@ export function AddWholesaleDiamond() {
     };
 
     try {
+      // 1. Insert the wholesale diamond details
       const { data: diamond, error: insertError } = await supabase
         .from('wholesale_diamonds')
         .insert([wholesaleData])
@@ -39,16 +40,17 @@ export function AddWholesaleDiamond() {
 
       if (insertError) throw insertError;
 
+      // 2. If images exist, insert them into the polymorphic `diamond_images` table
       if (images.length > 0) {
+        const imageInserts = images.map(img => ({
+          wholesale_diamond_id: diamond.id, // Link to the wholesale diamond
+          image_url: img.url,
+          is_primary: img.isPrimary
+        }));
+
         const { error: imagesError } = await supabase
-          .from('diamond_images')
-          .insert(
-            images.map(img => ({
-              wholesale_diamond_id: diamond.id,
-              image_url: img.url,
-              is_primary: img.isPrimary
-            }))
-          );
+          .from('diamond_images') // Corrected to use the polymorphic table
+          .insert(imageInserts);
         
         if (imagesError) throw imagesError;
       }
