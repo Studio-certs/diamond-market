@@ -16,45 +16,38 @@ export function AddIndividualDiamond() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const diamondData = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      price: parseFloat(formData.get('price') as string),
-      carat: parseFloat(formData.get('carat') as string),
-      color: formData.get('color') as string,
-      clarity: formData.get('clarity') as string,
-      cut: formData.get('cut') as string,
+    const params = {
+      p_name: formData.get('name') as string,
+      p_description: formData.get('description') as string,
+      p_price: parseFloat(formData.get('price') as string),
+      p_carat: parseFloat(formData.get('carat') as string),
+      p_color: formData.get('color') as string,
+      p_clarity: formData.get('clarity') as string,
+      p_cut: formData.get('cut') as string,
+      p_images: images,
     };
 
     try {
-      // Insert the diamond
-      const { data: diamond, error: insertError } = await supabase
-        .from('individual_diamonds')
-        .insert([diamondData])
-        .select()
-        .single();
+      // Call the new RPC function to handle the entire operation
+      const { error: rpcError } = await supabase.rpc(
+        'add_individual_diamond_with_images',
+        params
+      );
 
-      if (insertError) throw insertError;
-
-      // Insert the images
-      if (images.length > 0) {
-        const { error: imagesError } = await supabase
-          .from('diamond_images')
-          .insert(
-            images.map(img => ({
-              individual_diamond_id: diamond.id,
-              image_url: img.url,
-              is_primary: img.isPrimary
-            }))
-          );
-
-        if (imagesError) throw imagesError;
+      if (rpcError) {
+        throw rpcError;
       }
 
       navigate('/admin/individual-diamonds');
     } catch (err) {
-      console.error('Error adding diamond:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred while adding the diamond');
+      console.error('Error adding diamond via RPC:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      // Provide a more user-friendly error message
+      if (errorMessage.includes('Permission denied')) {
+        setError('You do not have permission to add a diamond. Please contact an administrator.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
