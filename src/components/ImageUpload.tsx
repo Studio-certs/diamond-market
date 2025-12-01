@@ -121,8 +121,8 @@ export function ImageUpload({ onImagesChange, existingImages = [] }: ImageUpload
       )}
 
       <p className="text-xs text-gray-500">
-        Upload multiple images of the diamond. The first image will be set as primary automatically.
-        You can change the primary image by clicking the star icon.
+        Upload multiple images of the diamond. Images will be automatically compressed to 512KB or less.
+        The first image will be set as primary automatically. You can change the primary image by clicking the star icon.
       </p>
     </div>
   );
