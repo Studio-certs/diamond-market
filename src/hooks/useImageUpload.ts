@@ -10,8 +10,8 @@ export function useImageUpload() {
     try {
       setUploading(true);
 
-      // Compress the image to max 512KB
-      const compressedFile = await compressImage(file, 512);
+      // Compress the image to max 200KB
+      const compressedFile = await compressImage(file, 200);
 
       // Create a unique file name with jpg extension since we compress to JPEG
       const fileExt = 'jpg';
