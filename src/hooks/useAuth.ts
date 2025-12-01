@@ -10,49 +10,111 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true;
+    let isInitialized = false;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
+    const fetchProfile = async (userId: string, userEmail: string) => {
+      const profileQuery = supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', userId)
+        .single();
+      
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      );
 
-      if (session?.user) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('role, full_name')
-            .eq('id', session.user.id)
-            .single();
+      try {
+        const { data, error } = await Promise.race([profileQuery, timeout]);
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Error fetching profile:', error);
+          // Set user with basic info even if profile fetch fails
+          setUser({
+            id: userId,
+            email: userEmail,
+            role: 'user',
+            full_name: '',
+          });
+        } else if (data) {
+          setUser({
+            id: userId,
+            email: userEmail,
+            role: data.role || 'user',
+            full_name: data.full_name || '',
+          });
+        }
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Error in profile fetch:', error);
+        // Set user with basic info even if profile fetch fails
+        setUser({
+          id: userId,
+          email: userEmail,
+          role: 'user',
+          full_name: '',
+        });
+      }
+    };
 
-          if (error) {
-            console.error('Error fetching profile:', error);
-            setUser(null);
-          } else if (data) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email!,
-              role: data.role || 'user',
-              full_name: data.full_name || '',
-            });
-          }
-        } catch (error) {
-          console.error('Error in onAuthStateChange profile fetch:', error);
+    // Initialize auth state by checking for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        if (session?.user) {
+          await fetchProfile(session.user.id, session.user.email!);
+        } else {
           setUser(null);
         }
-      } else {
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Error getting session:', error);
         setUser(null);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+          isInitialized = true;
+        }
       }
-      
-      // Set loading to false only after the first auth event is handled.
-      // This prevents the loading screen from reappearing on session refreshes.
-      setIsLoading(false);
+    };
+
+    initializeAuth();
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      console.log('Auth state change:', event, session?.user?.email);
+
+      // Skip initial events during initialization
+      if (!isInitialized) return;
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          setIsLoading(true);
+          await fetchProfile(session.user.id, session.user.email!);
+          setIsLoading(false);
+        }
+      } else if (event === 'USER_UPDATED' && session?.user) {
+        await fetchProfile(session.user.id, session.user.email!);
+      } else if (!session) {
+        setUser(null);
+        setIsLoading(false);
+      }
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // An empty dependency array ensures this effect runs only once.
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -86,12 +148,29 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
-      // The onAuthStateChange listener will set the user to null.
-      // Navigate to a safe page after sign-out.
-      navigate('/');
+      // Clear user state immediately for instant UI feedback
+      setUser(null);
+      setIsLoading(false);
+      
+      // Clear all local storage and session storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error during sign out:', error);
+      }
+      
+      // Force navigate to home
+      navigate('/', { replace: true });
+      
+      // Force a page reload to completely reset state
+      window.location.href = '/';
     } catch (error) {
       console.error('Error in signOut:', error);
+      setUser(null);
+      setIsLoading(false);
+      window.location.href = '/';
     }
   };
 
